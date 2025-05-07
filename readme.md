@@ -1,113 +1,234 @@
-# Official PyTorch implementation of "Tackling the Generative Learning Trilemma with Denoising Diffusion GANs" [(ICLR 2022 Spotlight Paper)](https://arxiv.org/abs/2112.07804) #
+Here is the complete `README.md` file with everything included in a single document — architecture, methodology, usage instructions, dataset, evaluation, and more — suitable for publishing or sharing as part of your DD-GAN project:
 
-<div align="center">
-  <a href="https://xavierxiao.github.io/" target="_blank">Zhisheng&nbsp;Xiao</a> &emsp; <b>&middot;</b> &emsp;
-  <a href="https://karstenkreis.github.io/" target="_blank">Karsten&nbsp;Kreis</a> &emsp; <b>&middot;</b> &emsp;
-  <a href="http://latentspace.cc/arash_vahdat/" target="_blank">Arash&nbsp;Vahdat</a>
-  <br> <br>
-  <a href="https://nvlabs.github.io/denoising-diffusion-gan/" target="_blank">Project&nbsp;Page</a>
-</div>
-<br>
-<br>
+---
 
-<div align="center">
-    <img width="800" alt="teaser" src="assets/teaser.png"/>
-</div>
+````markdown
+# 🧠 Denoising Diffusion GANs and Latent Space Analysis
 
-Generative denoising diffusion models typically assume that the denoising distribution can be modeled by a Gaussian distribution. This assumption holds only for small denoising steps, which in practice translates to thousands of denoising steps in the synthesis process. In our denoising diffusion GANs, we represent the denoising model using multimodal and complex conditional GANs, enabling us to efficiently generate data in as few as two steps.
+This project explores **DD-GAN (Denoising Diffusion GANs)**: a generative model combining the power of GANs and diffusion models to generate high-quality and diverse images efficiently. We also perform latent space analysis and semantic attribute editing using a ResNet-18 attribute classifier and latent direction manipulation.
 
-## Set up datasets ##
-We trained on several datasets, including CIFAR10, LSUN Church Outdoor 256 and CelebA HQ 256. 
-For large datasets, we store the data in LMDB datasets for I/O efficiency. Check [here](https://github.com/NVlabs/NVAE#set-up-file-paths-and-data) for information regarding dataset preparation.
+---
 
+## 📌 Abstract
 
-## Training Denoising Diffusion GANs ##
-We use the following commands on each dataset for training denoising diffusion GANs.
+Generative models like VAEs, GANs, and diffusion models have revolutionized AI-driven image synthesis. Yet, each comes with trade-offs in quality, diversity, and efficiency. DD-GAN is a hybrid approach that integrates conditional GANs with diffusion processes to achieve **high-quality, fast-sampled images** while preserving diversity. This project trains DD-GAN on CelebA-HQ, evaluates it using **FID**, and applies **latent space analysis** for semantic editing.
 
-#### CIFAR-10 ####
+---
 
-We train Denoising Diffusion GANs on CIFAR-10 using 4 32-GB V100 GPU. 
-```
-python3 train_ddgan.py --dataset cifar10 --exp ddgan_cifar10_exp1 --num_channels 3 --num_channels_dae 128 --num_timesteps 4 \
---num_res_blocks 2 --batch_size 64 --num_epoch 1800 --ngf 64 --nz 100 --z_emb_dim 256 --n_mlp 4 --embedding_type positional \
---use_ema --ema_decay 0.9999 --r1_gamma 0.02 --lr_d 1.25e-4 --lr_g 1.6e-4 --lazy_reg 15 --num_process_per_node 4 \
---ch_mult 1 2 2 2 --save_content
-```
+## 🔑 Keywords
 
-#### LSUN Church Outdoor 256 ####
+`DD-GAN`, `Diffusion Models`, `GANs`, `Latent Space`, `Attribute Editing`, `CelebA-HQ`, `ResNet`, `FID`, `Generative AI`
 
-We train Denoising Diffusion GANs on LSUN Church Outdoor 256 using 8 32-GB V100 GPU. 
-```
-python3 train_ddgan.py --dataset lsun --image_size 256 --exp ddgan_lsun_exp1 --num_channels 3 --num_channels_dae 64 --ch_mult 1 1 2 2 4 4 --num_timesteps 4 \
---num_res_blocks 2 --batch_size 8 --num_epoch 500 --ngf 64 --embedding_type positional --use_ema --ema_decay 0.999 --r1_gamma 1. \
---z_emb_dim 256 --lr_d 1e-4 --lr_g 1.6e-4 --lazy_reg 10 --num_process_per_node 8 --save_content
-```
+---
 
-#### CelebA HQ 256 ####
+## 📐 Architecture
 
-We train Denoising Diffusion GANs on CelebA HQ 256 using 8 32-GB V100 GPUs. 
-```
-python3 train_ddgan.py --dataset celeba_256 --image_size 256 --exp ddgan_celebahq_exp1 --num_channels 3 --num_channels_dae 64 --ch_mult 1 1 2 2 4 4 --num_timesteps 2 \
---num_res_blocks 2 --batch_size 4 --num_epoch 800 --ngf 64 --embedding_type positional --use_ema --r1_gamma 2. \
---z_emb_dim 256 --lr_d 1e-4 --lr_g 2e-4 --lazy_reg 10  --num_process_per_node 8 --save_content
-```
+DD-GAN includes the following core components:
 
-## Pretrained Checkpoints ##
-We have released pretrained checkpoints on CIFAR-10 and CelebA HQ 256 at this 
-[Google drive directory](https://drive.google.com/drive/folders/1UkzsI0SwBRstMYysRdR76C1XdSv5rQNz?usp=sharing).
-Simply download the `saved_info` directory to the code directory. Use `--epoch_id 1200` for CIFAR-10 and `--epoch_id 550`
-for CelebA HQ 256 in the commands below.
+### 1. **Forward Diffusion**
+- Adds Gaussian noise to real images over **T = 2** timesteps.
+- Greatly reduces sampling steps vs traditional 1000-step diffusion models.
 
-## Evaluation ##
-After training, samples can be generated by calling ```test_ddgan.py```. We evaluate the models with single V100 GPU.
-Below, we use `--epoch_id` to specify the checkpoint saved at a particular epoch.
-Specifically, for models trained by above commands, the scripts for generating samples on CIFAR-10 is
-```
-python3 test_ddgan.py --dataset cifar10 --exp ddgan_cifar10_exp1 --num_channels 3 --num_channels_dae 128 --num_timesteps 4 \
---num_res_blocks 2 --nz 100 --z_emb_dim 256 --n_mlp 4 --ch_mult 1 2 2 2 --epoch_id $EPOCH
-```
-The scripts for generating samples on CelebA HQ is 
-```
-python3 test_ddgan.py --dataset celeba_256 --image_size 256 --exp ddgan_celebahq_exp1 --num_channels 3 --num_channels_dae 64 \
---ch_mult 1 1 2 2 4 4 --num_timesteps 2 --num_res_blocks 2  --epoch_id $EPOCH
-```
-The scripts for generating samples on LSUN Church Outdoor is 
-```
-python3 test_ddgan.py --dataset lsun --image_size 256 --exp ddgan_lsun_exp1 --num_channels 3 --num_channels_dae 64 \
---ch_mult 1 1 2 2 4 4  --num_timesteps 4 --num_res_blocks 2  --epoch_id $EPOCH
-```
+### 2. **Conditional Generator (U-Net)**
+- Accepts:
+  - Noisy image `x_t`
+  - Timestep embedding
+  - Latent vector `z`
+- Predicts denoised image `x_0`
 
-We use the [PyTorch](https://github.com/mseitzer/pytorch-fid) implementation to compute the FID scores, and in particular, codes for computing the FID are adapted from [FastDPM](https://github.com/FengNiMa/FastDPM_pytorch).
+### 3. **Posterior Sampling**
+- Uses GAN-learned posterior instead of exact diffusion reverse process
+- Allows **fast sampling (2–4 steps)**
 
-To compute FID, run the same scripts above for sampling, with additional arguments ```--compute_fid``` and ```--real_img_dir /path/to/real/images```.
+### 4. **Discriminator & Training Stability**
+- Adversarial loss + R1 regularization
+- **EMA (Exponential Moving Average)** for smooth training
+- Uses **FID** for evaluation
 
-For Inception Score, save samples in a single numpy array with pixel values in range [0, 255] and simply run 
-```
-python ./pytorch_fid/inception_score.py --sample_dir /path/to/sampled_images
-```
-where the code for computing Inception Score is adapted from [here](https://github.com/tsc2017/Inception-Score).
+---
 
-For Improved Precision and Recall, follow the instruction [here](https://github.com/kynkaat/improved-precision-and-recall-metric).
+## 🧪 Methodology
 
+### ➤ Dataset
+- **CelebA-HQ (128×128)**
+- ~5000 images used for training DD-GAN
+- Full CelebA dataset used for ResNet attribute classifier (200k images, 40 attributes)
 
-## License ##
-Please check the LICENSE file. Denoising diffusion GAN may be used non-commercially, meaning for research or 
-evaluation purposes only. For business inquiries, please contact 
-[researchinquiries@nvidia.com](mailto:researchinquiries@nvidia.com).
+### ➤ Training Setup
+| Config           | Value             |
+|------------------|------------------|
+| GPUs             | 3× NVIDIA A30 (24GB) |
+| Epochs           | 1200             |
+| Diffusion Steps  | 2                |
+| Batch Size       | 32               |
+| Learning Rate    | 1e-4 (Dis), 2e-4 (Gen) |
 
-## Bibtex ##
-Cite our paper using the following bibtex item:
+---
 
-```
-@inproceedings{
-xiao2022tackling,
-title={Tackling the Generative Learning Trilemma with Denoising Diffusion GANs},
-author={Zhisheng Xiao and Karsten Kreis and Arash Vahdat},
-booktitle={International Conference on Learning Representations},
-year={2022}
-}
+## 🛠️ Installation
+
+```bash
+git clone https://github.com/your-repo/denoising-diffusion-gan.git
+cd denoising-diffusion-gan
+conda create -n ddgan python=3.8
+conda activate ddgan
+pip install -r requirements.txt
+````
+
+---
+
+## 📂 Project Structure
+
+```bash
+.
+├── custom_train_ddgan.py                # DD-GAN training script
+├── custom_test.py                # Image generator (from saved model)
+├── predict_attributes.py         # Predict attributes using ResNet
+├── train_celeba_256_classifier.py  # Train ResNet-18 on CelebA
+├── find_latent_directions.py     # Latent direction via logistic regression
+├── latent_image_generator.py     # Edits latent vectors based on direction
+├── progression.py                # Progressive gain editing
+├── attr_verify.py                # Shows images + attributes
+├── generated_samples/            # Generated outputs
+├── generated_samples_with_latents/
+├── datasets/, datasets_prep/     # Data folders
+├── pytorch_fid/                  # FID evaluation
+├── requirements.txt
 ```
 
-## Contributors ##
-Denoising Diffusion GAN was built primarily by [Zhisheng Xiao](https://xavierxiao.github.io/) during a summer 
-internship at NVIDIA research.
+---
+
+## 🧭 Usage Guide
+
+### 1. ✅ Resize Images
+
+```bash
+python image_resize.py
+```
+
+### 2. 🚀 Train DD-GAN
+
+```bash
+python3 custom_train.py  --dataset custom_128 \--image_size 128 --exp ddgan_custom_exp1   --num_channels 3 --num_channels_dae 64 --ch_mult 1 1 2 2 4 4 --num_timesteps 2 --num_res_blocks 2  --batch_size 32 --num_epoch 1200 --ngf 64 --embedding_type positional --use_ema  --r1_gamma 2. --z_emb_dim 256 --lr_d 1e-4  --lr_g 2e-4  --lazy_reg 10  --num_process_per_node 3  --save_content --save_content_every 40 --save_ckpt_every 40 --resume
+```
+
+### 3. 🖼️ Generate Samples
+
+```bash
+python3 custom_test.py --dataset custom_128 --image_size 128 --exp ddgan_custom_exp1 --num_channels 3 --num_channels_dae 64 \
+--ch_mult 1 1 2 2 4 4 --num_timesteps 2 --num_res_blocks 2  --epoch_id 1200 --batch_size 30000
+```
+
+### 4. 🧠 Train Attribute Classifier
+
+```bash
+python train_celeba_256_classifier.py --data_root datasets/celeba --attr_file datasets/list_attr_celeba.txt
+```
+
+### 5. 📋 Predict Attributes of Generated Samples
+
+```bash
+python predict_attributes.py --image_dir generated_samples/
+```
+
+### 6. ➡️ Find Latent Directions
+
+```bash
+python find_latent_directions.py --attr_file generated_attributes.npy
+```
+
+### 7. 🎨 Edit Latent Attributes
+
+Edit `desired_attrs` in `latent_image_generator.py`, then run:
+
+```bash
+python latent_image_generator.py
+```
+
+### 8. 📈 Visualize Progression
+
+```bash
+python progression.py
+```
+
+### 9. 🔍 Verify Attributes
+
+```bash
+python attr_verify.py
+```
+
+---
+
+## 📊 Evaluation: FID Score
+
+To compute FID:
+
+```bash
+python -m pytorch_fid generated_samples/ datasets/celeba_128/
+```
+
+✅ Achieved FID: **17**
+
+---
+
+## 🧠 Latent Space Analysis
+
+### ✔ Attribute Classifier
+
+* Trained ResNet-18 model to predict 40 attributes
+* Achieved attribute prediction loss ≈ **0.01**
+
+### ✔ Logistic Regression for Direction
+
+* Identified latent vector directions using predicted attributes
+* Enabled semantic editing (e.g., hair color, age)
+
+### ✔ Editing Results
+
+* Edits like “add blond hair” worked effectively
+* **Entanglement** issue observed with sparse/overlapping attributes
+
+---
+
+## 🌍 Applications
+
+* **Creative AI**: Semantic editing of face features
+* **Healthcare**: Medical image synthesis
+* **Security**: Face reconstruction and enhancement
+
+---
+
+## ⚠️ Challenges
+
+* **Latent Entanglement**: One attribute influences others
+* **Limited Data**: Only 5k images used for generator training
+
+---
+
+## 🔮 Future Work
+
+* ✳ Add attribute conditioning during DD-GAN training
+* ✳ Use full CelebA-HQ dataset (200k)
+* ✳ Explore advanced disentanglement (e.g., InfoGAN, contrastive loss)
+
+---
+
+## 📘 Citation
+
+Xiao, Z., Kreis, K., & Vahdat, A. (2022). *Tackling the Generative Learning Trilemma with Denoising Diffusion GANs*.
+**International Conference on Learning Representations (ICLR)**.
+🔗 [https://openreview.net/forum?id=LbsDskdxfh](https://openreview.net/forum?id=LbsDskdxfh)
+
+---
+
+## 🧾 License
+
+This codebase is intended for academic and research use only. Based on [official DD-GAN paper](https://openreview.net/forum?id=LbsDskdxfh).
+
+© 2025 Teja Vishnu Vardhan Boddu – Arizona State University
+
+```
+
+---
+
+```
