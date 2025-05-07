@@ -3,7 +3,7 @@
 ---
 
 ````markdown
-# 🧠 Denoising Diffusion GANs and Latent Space Analysis
+### 🧠 Denoising Diffusion GANs and Latent Space Analysis
 
 This project explores **DD-GAN (Denoising Diffusion GANs)**: a generative model combining the power of GANs and diffusion models to generate high-quality and diverse images efficiently. We also perform latent space analysis and semantic attribute editing using a ResNet-18 attribute classifier and latent direction manipulation.
 
