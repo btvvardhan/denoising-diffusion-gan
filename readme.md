@@ -98,7 +98,67 @@ pip install -r requirements.txt
 
 ---
 
-## 🧭 Usage Guide
+## 🧭 Usage Guide -- CIFAR-10
+
+### 1. 🚀 Train DD-GAN
+
+```bash
+python3 train_ddgan.py \
+  --dataset cifar10 \
+  --exp ddgan_cifar10_exp1 \
+  --num_channels 3 \
+  --num_channels_dae 128 \
+  --num_timesteps 4 \
+  --num_res_blocks 2 \
+  --batch_size 64 \
+  --num_epoch 1400 \
+  --ngf 64 \
+  --nz 100 \
+  --z_emb_dim 256 \
+  --n_mlp 4 \
+  --embedding_type positional \
+  --use_ema \
+  --ema_decay 0.9999 \
+  --r1_gamma 0.02 \
+  --lr_d 1.25e-4 \
+  --lr_g 1.6e-4 \
+  --lazy_reg 15 \
+  --num_process_per_node 3 \
+  --ch_mult 1 2 2 2 \
+  --save_content \
+  --save_content_every 10 \
+  --save_ckpt_every 10
+```
+### 2. 📊 Compute FID
+
+```bash
+python3 test_ddgan.py \
+  --dataset cifar10 \
+  --exp ddgan_cifar10_exp1 \
+  --num_channels 3 \
+  --num_channels_dae 128 \
+  --num_timesteps 4 \
+  --num_res_blocks 2 \
+  --nz 100 \
+  --z_emb_dim 256 \
+  --n_mlp 4 \
+  --ch_mult 1 2 2 2 \
+  --epoch_id 1400 \
+  --batch_size 100 \
+  --compute_fid \
+  --real_img_dir ./real_cifar10
+```
+### This will regenerate up to 50 k samples in generated_samples/cifar10/ and print:
+```bash
+FID = <your_score>
+```
+### 3. 🎯 Compute Inception Score (IS)
+### For Inception Score, save samples in a single numpy array with pixel values in range [0, 255] and simply run
+```bash
+python ./pytorch_fid/inception_score.py --sample_dir /path/to/sampled_images
+```
+
+## 🧭 Usage Guide -- CelebA
 
 ### 1. ✅ Resize Images
 
